@@ -133,18 +133,13 @@ $app->post('/login', function() use ($app) {
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
 
-/**
- * Listing all tasks of particual user
- * method GET
- * url /tasks          
- */
-$app->get('/tasks', 'authenticate', function() {
+$app->get('/feeds', 'authenticate', function() {
             global $user_id;
             $response = array();
             $db = new DbHandler();
 
             // fetching all user tasks
-            $result = $db->getAllUserTasks($user_id);
+            $result = $db->getAllUserFeeds($user_id);
 
             $response["error"] = false;
             $response["tasks"] = array();
@@ -152,10 +147,10 @@ $app->get('/tasks', 'authenticate', function() {
             // looping through result and preparing tasks array
             while ($task = $result->fetch_assoc()) {
                 $tmp = array();
-                $tmp["id"] = $task["id"];
-                $tmp["task"] = $task["task"];
-                $tmp["status"] = $task["status"];
-                $tmp["createdAt"] = $task["created_at"];
+                $tmp["idnum"] = $task["idnum"];
+                $tmp["name"] = $task["name"];
+                $tmp["url"] = $task["url"];
+                $tmp["rss"] = $task["rss"];
                 array_push($response["tasks"], $tmp);
             }
 
@@ -163,25 +158,25 @@ $app->get('/tasks', 'authenticate', function() {
         });
 
 /**
- * Listing single task of particual user
+ * Listing single feed of particual user
  * method GET
- * url /tasks/:id
- * Will return 404 if the task doesn't belongs to user
+ * url /feeds/:id
+ * Will return 404 if the task doesn't belong to user
  */
-$app->get('/tasks/:id', 'authenticate', function($task_id) {
+$app->get('/feeds/:id', 'authenticate', function($feed_id) {
             global $user_id;
             $response = array();
             $db = new DbHandler();
 
             // fetch task
-            $result = $db->getTask($task_id, $user_id);
+            $result = $db->getFeed($feed_id, $user_id);
 
             if ($result != NULL) {
                 $response["error"] = false;
-                $response["id"] = $result["id"];
-                $response["task"] = $result["task"];
-                $response["status"] = $result["status"];
-                $response["createdAt"] = $result["created_at"];
+                $response["idnum"] = $result["idnum"];
+                $response["name"] = $result["name"];
+                $response["url"] = $result["url"];
+                $response["rss"] = $result["rss"];
                 echoRespnse(200, $response);
             } else {
                 $response["error"] = true;
@@ -191,32 +186,34 @@ $app->get('/tasks/:id', 'authenticate', function($task_id) {
         });
 
 /**
- * Creating new task in db
+ * Creating new feed in db
  * method POST
  * params - name
  * url - /tasks/
  */
-$app->post('/tasks', 'authenticate', function() use ($app) {
+$app->post('/feeds', 'authenticate', function() use ($app) {
             // check for required params
-            verifyRequiredParams(array('task'));
+            verifyRequiredParams(array('name'));
 
             $response = array();
-            $task = $app->request->post('task');
+            $name = $app->request->post('name');
+            $url = $app->request->post('url');
+            $rss = $app->request->post('rss');
 
             global $user_id;
             $db = new DbHandler();
 
             // creating new task
-            $task_id = $db->createTask($user_id, $task);
+            $feed_id = $db->createFeed($user_id, $name, $url, $rss);
 
             if ($task_id != NULL) {
                 $response["error"] = false;
-                $response["message"] = "Task created successfully";
+                $response["message"] = "Feed created successfully";
                 $response["task_id"] = $task_id;
                 echoRespnse(201, $response);
             } else {
                 $response["error"] = true;
-                $response["message"] = "Failed to create task. Please try again";
+                $response["message"] = "Failed to create feed. Please try again";
                 echoRespnse(200, $response);
             }            
         });
@@ -227,50 +224,51 @@ $app->post('/tasks', 'authenticate', function() use ($app) {
  * params task, status
  * url - /tasks/:id
  */
-$app->put('/tasks/:id', 'authenticate', function($task_id) use($app) {
+$app->put('/feeds/:id', 'authenticate', function($feed_id) use($app) {
             // check for required params
-            verifyRequiredParams(array('task', 'status'));
+            verifyRequiredParams(array('name', 'url', 'rss'));
 
             global $user_id;            
-            $task = $app->request->put('task');
-            $status = $app->request->put('status');
+            $name = $app->request->put('name');
+            $url = $app->request->put('url');
+            $rss = $app->request->put('rss');
 
             $db = new DbHandler();
             $response = array();
 
             // updating task
-            $result = $db->updateTask($user_id, $task_id, $task, $status);
+            $result = $db->updateTask($user_id, $feed_id, $name, $url, $rss);
             if ($result) {
                 // task updated successfully
                 $response["error"] = false;
-                $response["message"] = "Task updated successfully";
+                $response["message"] = "Feed updated successfully";
             } else {
                 // task failed to update
                 $response["error"] = true;
-                $response["message"] = "Task failed to update. Please try again!";
+                $response["message"] = "Feed failed to update. Please try again!";
             }
             echoRespnse(200, $response);
         });
 
 /**
- * Deleting task. Users can delete only their tasks
+ * Deleting feed. Users can delete only their feeds
  * method DELETE
- * url /tasks
+ * url /feeds
  */
-$app->delete('/tasks/:id', 'authenticate', function($task_id) use($app) {
+$app->delete('/feeds/:id', 'authenticate', function($feed_id) use($app) {
             global $user_id;
 
             $db = new DbHandler();
             $response = array();
-            $result = $db->deleteTask($user_id, $task_id);
+            $result = $db->deleteTask($user_id, $feed_id);
             if ($result) {
                 // task deleted successfully
                 $response["error"] = false;
-                $response["message"] = "Task deleted succesfully";
+                $response["message"] = "Feed deleted succesfully";
             } else {
                 // task failed to delete
                 $response["error"] = true;
-                $response["message"] = "Task failed to delete. Please try again!";
+                $response["message"] = "Feed failed to delete. Please try again!";
             }
             echoRespnse(200, $response);
         });

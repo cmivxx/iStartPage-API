@@ -4,8 +4,7 @@
  * Class to handle all db operations
  * This class will have CRUD methods for database tables
  *
- * @author Ravi Tamada
- * @link URL Tutorial link
+ * @author Chris Miller
  */
 class DbHandler {
 
@@ -202,27 +201,27 @@ class DbHandler {
         return md5(uniqid(rand(), true));
     }
 
-    /* ------------- `tasks` table method ------------------ */
+    /* ------------- `feeds` table method ------------------ */
 
     /**
-     * Creating new task
-     * @param String $user_id user id to whom task belongs to
-     * @param String $task task text
+     * Creating new feed
      */
-    public function createTask($user_id, $task) {
-        $stmt = $this->conn->prepare("INSERT INTO tasks(task) VALUES(?)");
-        $stmt->bind_param("s", $task);
+    public function createFeed($user_id, $name, $url, $rss) {
+        $stmt = $this->conn->prepare("INSERT INTO rssurls(feed) VALUES(?)");
+        $stmt->bind_param("s", $name);
+        $stmt->bind_param("s", $url);
+        $stmt->bind_param("s", $rss);
         $result = $stmt->execute();
         $stmt->close();
 
         if ($result) {
             // task row created
             // now assign the task to user
-            $new_task_id = $this->conn->insert_id;
-            $res = $this->createUserTask($user_id, $new_task_id);
+            $new_feed_id = $this->conn->insert_id;
+            $res = $this->createUserFeed($user_id, $new_feed_id);
             if ($res) {
                 // task created successfully
-                return $new_task_id;
+                return $new_feed_id;
             } else {
                 // task failed to create
                 return NULL;
@@ -234,22 +233,22 @@ class DbHandler {
     }
 
     /**
-     * Fetching single task
-     * @param String $task_id id of the task
+     * Fetching single feed
+     * @param String $feed_id id of the feed
      */
-    public function getTask($task_id, $user_id) {
-        $stmt = $this->conn->prepare("SELECT t.id, t.task, t.status, t.created_at from tasks t, user_tasks ut WHERE t.id = ? AND ut.task_id = t.id AND ut.user_id = ?");
-        $stmt->bind_param("ii", $task_id, $user_id);
+    public function getFeed($feed_id, $user_id) {
+        $stmt = $this->conn->prepare("SELECT f.idnum, f.name, f.url, f.rss from rssurls r, user_feeds uf WHERE r.idnum = ? AND uf.feed_id = r.idnum AND uf.user_id = ?");
+        $stmt->bind_param("ii", $feed_id, $user_id);
         if ($stmt->execute()) {
             $res = array();
-            $stmt->bind_result($id, $task, $status, $created_at);
+            $stmt->bind_result($idnum, $name, $url, $rss);
             // TODO
             // $task = $stmt->get_result()->fetch_assoc();
             $stmt->fetch();
-            $res["id"] = $id;
-            $res["task"] = $task;
-            $res["status"] = $status;
-            $res["created_at"] = $created_at;
+            $res["idnum"] = $id;
+            $res["name"] = $name;
+            $res["url"] = $url;
+            $res["rss"] = $rss;
             $stmt->close();
             return $res;
         } else {
@@ -258,11 +257,11 @@ class DbHandler {
     }
 
     /**
-     * Fetching all user tasks
+     * Fetching all user feeds
      * @param String $user_id id of the user
      */
-    public function getAllUserTasks($user_id) {
-        $stmt = $this->conn->prepare("SELECT t.* FROM tasks t, user_tasks ut WHERE t.id = ut.task_id AND ut.user_id = ?");
+    public function getAllUserFeeds($user_id) {
+        $stmt = $this->conn->prepare("SELECT r.* FROM rssurls r, user_feeds uf WHERE r.idnum = uf.feed_id AND uf.user_id = ?");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $tasks = $stmt->get_result();
@@ -276,9 +275,9 @@ class DbHandler {
      * @param String $task task text
      * @param String $status task status
      */
-    public function updateTask($user_id, $task_id, $task, $status) {
-        $stmt = $this->conn->prepare("UPDATE tasks t, user_tasks ut set t.task = ?, t.status = ? WHERE t.id = ? AND t.id = ut.task_id AND ut.user_id = ?");
-        $stmt->bind_param("siii", $task, $status, $task_id, $user_id);
+    public function updateFeed($user_id, $feed_id, $name, $url, $rss) {
+        $stmt = $this->conn->prepare("UPDATE rssurls r, user_feeds uf set r.name = ?, r.url = ?, r.rss = ? WHERE r.idnum = ? AND r.idnum = uf.feed_id AND uf.user_id = ?");
+        $stmt->bind_param("sssii", $name, $url, $rss, $feed_id, $user_id);
         $stmt->execute();
         $num_affected_rows = $stmt->affected_rows;
         $stmt->close();
@@ -289,25 +288,25 @@ class DbHandler {
      * Deleting a task
      * @param String $task_id id of the task to delete
      */
-    public function deleteTask($user_id, $task_id) {
-        $stmt = $this->conn->prepare("DELETE t FROM tasks t, user_tasks ut WHERE t.id = ? AND ut.task_id = t.id AND ut.user_id = ?");
-        $stmt->bind_param("ii", $task_id, $user_id);
+    public function deleteFeed($user_id, $feed_id) {
+        $stmt = $this->conn->prepare("DELETE r FROM rssurls r, user_feeds uf WHERE r.idnum = ? AND uf.feed_id = r.idnum AND uf.user_id = ?");
+        $stmt->bind_param("ii", $feed_id, $user_id);
         $stmt->execute();
         $num_affected_rows = $stmt->affected_rows;
         $stmt->close();
         return $num_affected_rows > 0;
     }
 
-    /* ------------- `user_tasks` table method ------------------ */
+    /* ------------- `user_feeds` table method ------------------ */
 
     /**
      * Function to assign a task to user
      * @param String $user_id id of the user
      * @param String $task_id id of the task
      */
-    public function createUserTask($user_id, $task_id) {
-        $stmt = $this->conn->prepare("INSERT INTO user_tasks(user_id, task_id) values(?, ?)");
-        $stmt->bind_param("ii", $user_id, $task_id);
+    public function createUserFeed($user_id, $feed_id) {
+        $stmt = $this->conn->prepare("INSERT INTO user_feeds(user_id, feed_id) values(?, ?)");
+        $stmt->bind_param("ii", $user_id, $feed_id);
         $result = $stmt->execute();
 
         if (false === $result) {
