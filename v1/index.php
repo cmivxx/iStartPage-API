@@ -142,16 +142,16 @@ $app->get('/feeds', 'authenticate', function() {
             $result = $db->getAllUserFeeds($user_id);
 
             $response["error"] = false;
-            $response["tasks"] = array();
+            $response["feeds"] = array();
 
             // looping through result and preparing tasks array
             while ($task = $result->fetch_assoc()) {
                 $tmp = array();
                 $tmp["idnum"] = $task["idnum"];
                 $tmp["name"] = $task["name"];
-                $tmp["url"] = $task["url"];
-                $tmp["rss"] = $task["rss"];
-                array_push($response["tasks"], $tmp);
+                $tmp["url"] = html_entity_decode($task["url"]);
+                $tmp["rss"] = html_entity_decode($task["rss"]);
+                array_push($response["feeds"], $tmp);
             }
 
             echoRespnse(200, $response);
