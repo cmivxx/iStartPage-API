@@ -1,1 +1,32 @@
-/include/Config.php
+# Include your project-specific ignores in this file
+# Read about how to use .gitignore: https://help.github.com/articles/ignoring-files
+
+# ignore the Apple DS crap
+.DS_Store
+
+# ignore PyCharm stuff and Emacs stuff
+.idea
+*~
+
+# ignore any sass-cache stuff
+/.sass-cache
+
+* We don't want compiled files - those should be compiled locally
+/css/base.css
+/js/min
+/js/settings.json
+
+# ignore third party code
+/node_modules
+
+# the deployable build is created with grunt
+/deploy
+
+# ignore python byte-compiled files
+*.pyc
+
+# ignore log files
+*.log
+
+_docs
+index.yaml
